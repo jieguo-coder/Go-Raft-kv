@@ -2,7 +2,9 @@ package wal
 
 import (
 	"encoding/binary"
+	"errors"
 	"hash/crc32"
+	"io"
 	"os"
 	"sync"
 )
@@ -83,6 +85,57 @@ func (w *WAL) Write(data []byte) error {
 	}
 
 	return nil
+}
+
+// ReadNext 从日志中读取下一条完整记录
+func (w *WAL) ReadNext() ([]byte, error) {
+	// 先读取8字节的头部（4字节CRC + 4字节长度）
+	header := make([]byte, 8)
+	_, err := io.ReadFull(w.file, header)
+	if err != nil {
+		// 如果读到文件末尾，会返回 io.EOF,说明读完了
+		return nil, err
+	}
+
+	// 从头部解析出期望的 CRC 和数据长度
+	expectedCRC := binary.LittleEndian.Uint32(header[0:4])
+	length := binary.LittleEndian.Uint32(header[4:8])
+
+	// 防止内存撑爆（Double-Read 校验）
+	//规定一条数据最大不超过 10 MB
+	if length > 10*1024*1024 {
+		return nil, errors.New("数据长度异常，拒绝读取")
+	}
+
+	// 根据安全的长度读取真正数据
+	data := make([]byte, length)
+	_, err = io.ReadFull(w.file, data)
+	if err != nil {
+		return nil, err
+	}
+
+	// 读取8字节的尾部金丝雀
+	canaryBytes := make([]byte, 8)
+	_, err = io.ReadFull(w.file, canaryBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	// 解析金丝雀并验证
+	canary := binary.LittleEndian.Uint64(canaryBytes)
+	if canary != CanaryMagicNumber {
+		// 如果金丝雀不对，说明当时写到一半停电了
+		return nil, errors.New("校验失败，数据记录不全")
+	}
+
+	// 数据完好则重新计算 CRC32 校验和，与头部记录的是否一致
+	crcTable := crc32.MakeTable(crc32.Castagnoli)
+	actualCRC := crc32.Checksum(data, crcTable)
+	if actualCRC != expectedCRC {
+		return nil, errors.New("CRC32 校验失败")
+	}
+
+	return data, nil
 }
 
 // // 第二版：基于第一版加上了 CRC32 校验
