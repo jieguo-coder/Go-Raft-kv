@@ -138,6 +138,13 @@ func (w *WAL) ReadNext() ([]byte, error) {
 	return data, nil
 }
 
+// SeekToStart 将日记本的翻页指针重新拨回第一页的第一行
+func (w *WAL) SeekToStart() error {
+	// 0 表示偏移量为 0，io.SeekStart 表示从文件最开头算起
+	_, err := w.file.Seek(0, io.SeekStart)
+	return err
+}
+
 // // 第二版：基于第一版加上了 CRC32 校验
 // func (w *WAL) Write(data []byte) error {
 // 	// 先上锁
