@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"me/memtable"
 	"me/wal"
 )
 
@@ -21,6 +22,9 @@ func main() {
 	// 2. 将文件指针移回文件开头，准备从头开始读
 	// 在实际项目中，通常会专门写个 ResetReader 方法，为了简单先在在 main 里直接操作底层 file
 	// (需要把 wal 结构体里的 file 改成首字母大写的 File 才能在外部访问
+
+	sl := memtable.NewSlipList()
+	sl.Put("apple", "苹果")
 
 	// 3. 循环读取，直到读完
 	for {
