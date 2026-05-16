@@ -74,3 +74,20 @@ func NewSkipList() *SkipList {
 		maxLevel: maxLevel,
 	}
 }
+
+func (s *SkipList) Get(key string) (string, bool) {
+	// 准备记录每一层的“地铁”要在哪些站点停车
+	current := s.head
+
+	// 从最高层开始跳表
+	for i := s.maxLevel - 1; i >= 0; i-- {
+		for current.next[i] != nil && current.next[i].key < key {
+			current = current.next[i]
+		}
+	}
+
+	if current.next[0] != nil && current.next[0].key == key {
+		return current.next[0].value, true
+	}
+	return "", false
+}
