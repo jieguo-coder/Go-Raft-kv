@@ -27,14 +27,14 @@ func (s *SkipList) randomLevel() int {
 	return level
 }
 
-func (s *SkipList) Put(Key string, value string) {
+func (s *SkipList) Put(key string, value string) {
 	// 准备记录每一层的“地铁”要在哪些站点停车
 	update := make([]*Node, s.maxLevel)
 	current := s.head
 
 	// 从最高层开始跳表
 	for i := s.maxLevel - 1; i >= 0; i-- {
-		for current.next[i] != nil && current.next[i].key < Key {
+		for current.next[i] != nil && current.next[i].key < key {
 			current = current.next[i]
 		}
 		// 记录最后跳到哪了
@@ -42,8 +42,8 @@ func (s *SkipList) Put(Key string, value string) {
 	}
 
 	// 检查在第 0 层紧挨着的后继
-	if current.next != nil && current.next.key == key {
-		current.next.value = value
+	if current.next[0] != nil && current.next[0].key == key {
+		current.next[0].value = value
 		return
 	}
 
@@ -53,7 +53,7 @@ func (s *SkipList) Put(Key string, value string) {
 	// 创建新节点实例
 	newNode := &Node{
 		key:   key,
-		value: vslue,
+		value: value,
 		next:  make([]*Node, level), // next 的长度等于其拥有的层数
 	}
 
