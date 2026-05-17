@@ -61,27 +61,27 @@ func (w *WAL) Write(data []byte) error {
 	// 按照顺序写入硬盘
 	// 先写 CRC32 （4字节）
 	if _, err := w.file.Write(crcBytes); err != nil {
-		return nil
+		return err
 	}
 
 	// 再写数据长度（4字节）
 	if _, err := w.file.Write(lenBytes); err != nil {
-		return nil
+		return err
 	}
 
 	//写入真实数据（N字节）
 	if _, err := w.file.Write(data); err != nil {
-		return nil
+		return err
 	}
 
 	// 写入尾部金丝雀（8字节）
 	if _, err := w.file.Write(canaryBytes); err != nil {
-		return nil
+		return err
 	}
 
 	// 强制刷盘
 	if err := w.file.Sync(); err != nil {
-		return nil
+		return err
 	}
 
 	return nil
